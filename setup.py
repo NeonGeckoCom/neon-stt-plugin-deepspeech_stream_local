@@ -21,7 +21,7 @@ import os
 import requests
 from setuptools import setup
 
-PLUGIN_ENTRY_POINT = 'deepspeech_local_strem = neon_stt_plugin_deepspeech:DeepspeechLocalStreamingSTT'
+PLUGIN_ENTRY_POINT = 'deepspeech_stream_local = neon_stt_plugin_deepspeech:DeepSpeechLocalStreamingSTT'
 
 with open("README.md", "r") as f:
     long_description = f.read()
@@ -45,13 +45,17 @@ try:
     model_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.pbmm")
     scorer_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.scorer")
 
-    model = requests.get(model_url, allow_redirects=True)
-    with open(model_path, "wb") as out:
-        out.write(model.content)
+    if not os.path.isfile(model_path):
+        print(f"Downloading {model_url}")
+        model = requests.get(model_url, allow_redirects=True)
+        with open(model_path, "wb") as out:
+            out.write(model.content)
 
-    scorer = requests.get(scorer_url, allow_redirects=True)
-    with open(scorer_path, "wb") as out:
-        out.write(scorer.content)
+    if not os.path.isfile(scorer_path):
+        print(f"Downloading {scorer_url}")
+        scorer = requests.get(scorer_url, allow_redirects=True)
+        with open(scorer_path, "wb") as out:
+            out.write(scorer.content)
 except Exception as e:
     print(f"Error getting deepspeech models! {e}")
 
