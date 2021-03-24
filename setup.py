@@ -21,7 +21,7 @@ import os
 import requests
 from setuptools import setup
 
-PLUGIN_ENTRY_POINT = 'deepspeech_stream_local = neon_stt_plugin_deepspeech:DeepSpeechLocalStreamingSTT'
+PLUGIN_ENTRY_POINT = 'deepspeech_stream_local = neon_stt_plugin_deepspeech_stream_local:DeepSpeechLocalStreamingSTT'
 
 with open("README.md", "r") as f:
     long_description = f.read()
@@ -60,14 +60,16 @@ except Exception as e:
     print(f"Error getting deepspeech models! {e}")
 
 setup(
-    name='neon-stt-plugin-deepspeech',
+    name='neon-stt-plugin-deepspeech_stream_local',
     version=version,
     description='A Deepspeech Streaming stt plugin for Neon',
-    url='https://github.com/NeonGeckoCom/neon-stt-plugin-deepspeech',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url='https://github.com/NeonGeckoCom/neon-stt-plugin-deepspeech_stream_local',
     author='Neongecko',
     author_email='developers@neon.ai',
     license='NeonAI License v1.0',
-    packages=['neon_stt_plugin_deepspeech'],
+    packages=['neon_stt_plugin_deepspeech_stream_local'],
     install_requires=requirements,
     zip_safe=True,
     classifiers=[
