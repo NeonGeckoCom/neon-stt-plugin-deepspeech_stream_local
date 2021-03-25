@@ -49,6 +49,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
             os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.scorer")
         if not os.path.isfile(model_path):
             LOG.error("You need to provide a valid model file")
+            LOG.error(model_path)
             LOG.info("download a model from https://github.com/mozilla/DeepSpeech")
             raise FileNotFoundError
         if not scorer_path or not os.path.isfile(scorer_path):
