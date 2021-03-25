@@ -39,5 +39,6 @@ try:
         scorer = requests.get(scorer_url, allow_redirects=True)
         with open(scorer_path, "wb") as out:
             out.write(scorer.content)
+        print(f"Model Downloaded to {model_path}")
 except Exception as e:
     print(f"Error getting deepspeech models! {e}")
