@@ -28,7 +28,7 @@ from time import time
 from neon_utils.file_utils import get_audio_file_stream
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from neon_stt_plugin_google_cloud_streaming import GoogleCloudStreamingSTT
+from neon_stt_plugin_deepspeech_stream_local import DeepSpeechLocalStreamingSTT
 
 ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_PATH = os.path.join(ROOT_DIR, "test_audio")
@@ -37,7 +37,7 @@ TEST_PATH = os.path.join(ROOT_DIR, "test_audio")
 class TestGetSTT(unittest.TestCase):
     def setUp(self) -> None:
         results_event = Event()
-        self.stt = GoogleCloudStreamingSTT(results_event)
+        self.stt = DeepSpeechLocalStreamingSTT(results_event)
 
     def test_get_stt(self):
         for file in os.listdir(TEST_PATH):
@@ -55,7 +55,7 @@ class TestGetSTT(unittest.TestCase):
             result = self.stt.execute(None)
             exec_time = time() - start_time
             print(exec_time)  # TODO: Report metric
-            self.assertEqual(result[0].lower(), transcription)
+            self.assertIn(transcription, result)
         # sleep(10)
 
 
