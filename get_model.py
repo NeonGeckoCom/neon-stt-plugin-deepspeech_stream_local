@@ -18,44 +18,26 @@
 # China Patent: CN102017585  -  Europe Patent: EU2156652  -  Patents Pending
 
 import os
-import sys
-import unittest
+import requests
 
-from threading import Event
-from time import time
-from neon_utils.file_utils import get_audio_file_stream
+try:
+    if not os.path.isdir(os.path.expanduser("~/.local/share/neon/")):
+        os.makedirs(os.path.expanduser("~/.local/share/neon/"))
+    model_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.8.1-models.pbmm'
+    scorer_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.8.1-models.scorer'
+    model_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.pbmm")
+    scorer_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-from neon_stt_plugin_deepspeech_stream_local import DeepSpeechLocalStreamingSTT
+    if not os.path.isfile(model_path):
+        print(f"Downloading {model_url}")
+        model = requests.get(model_url, allow_redirects=True)
+        with open(model_path, "wb") as out:
+            out.write(model.content)
 
-ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
-TEST_PATH = os.path.join(ROOT_DIR, "test_audio")
-
-
-class TestGetSTT(unittest.TestCase):
-    def setUp(self) -> None:
-        results_event = Event()
-        self.stt = DeepSpeechLocalStreamingSTT(results_event)
-
-    def test_get_stt(self):
-        for file in os.listdir(TEST_PATH):
-            transcription = os.path.splitext(os.path.basename(file))[0].lower()
-            stream = get_audio_file_stream(os.path.join(TEST_PATH, file))
-            self.stt.stream_start()
-            try:
-                while True:
-                    chunk = stream.read(1024)
-                    self.stt.stream_data(chunk)
-            except EOFError:
-                pass
-
-            start_time = time()
-            result = self.stt.execute(None)
-            exec_time = time() - start_time
-            print(exec_time)  # TODO: Report metric
-            self.assertIn(transcription, result)
-        # sleep(10)
-
-
-if __name__ == '__main__':
-    unittest.main()
+    if not os.path.isfile(scorer_path):
+        print(f"Downloading {scorer_url}")
+        scorer = requests.get(scorer_url, allow_redirects=True)
+        with open(scorer_path, "wb") as out:
+            out.write(scorer.content)
+except Exception as e:
+    print(f"Error getting deepspeech models! {e}")
