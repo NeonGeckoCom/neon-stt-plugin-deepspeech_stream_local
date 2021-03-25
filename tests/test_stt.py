@@ -22,7 +22,6 @@ import sys
 import unittest
 
 from threading import Event
-from time import time
 from neon_utils.file_utils import get_audio_file_stream
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -49,12 +48,8 @@ class TestGetSTT(unittest.TestCase):
             except EOFError:
                 pass
 
-            start_time = time()
             result = self.stt.execute(None)
-            exec_time = time() - start_time
-            print(exec_time)  # TODO: Report metric
             self.assertIn(transcription, result)
-        # sleep(10)
 
 
 if __name__ == '__main__':
