@@ -2,4 +2,4 @@ deepspeech~=0.8.1
 setuptools~=54.0.0
 numpy~=1.19.5
 SpeechRecognition~=3.8.1
-neon_utils@git+https://github.com/NeonGeckoCom/neon-skill-utils
+neon_utils@git+https://github.com/NeonDaneil/neon-skill-utils@FEAT_STTTiming
