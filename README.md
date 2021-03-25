@@ -9,7 +9,7 @@ You may specify your own model and scorer files, otherwise the below default sho
 tts:
     module: deepspeech_stream_local
     deepspeech_stream_local:
-      model_path: ~/.local/share/neon/deepspeech-0.8.1-models.pbmm
-      scorer_path: ~/.local/share/neon/deepspeech-0.8.1-models.scorer
+      model_path: ~/.local/share/neon/deepspeech-0.9.3-models.pbmm
+      scorer_path: ~/.local/share/neon/deepspeech-0.9.3-models.scorer
 
 ```

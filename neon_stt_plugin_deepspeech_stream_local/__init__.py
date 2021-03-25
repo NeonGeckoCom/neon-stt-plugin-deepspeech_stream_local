@@ -44,9 +44,9 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
             raise ValueError("DeepSpeech is currently english only")
 
         model_path = self.config.get("model_path") or \
-            os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.pbmm")
+            os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.pbmm")
         scorer_path = self.config.get("scorer_path") or \
-            os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.scorer")
+            os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
         if not os.path.isfile(model_path):
             LOG.error("You need to provide a valid model file")
             LOG.error(model_path)

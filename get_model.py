@@ -23,8 +23,8 @@ import requests
 try:
     if not os.path.isdir(os.path.expanduser("~/.local/share/neon/")):
         os.makedirs(os.path.expanduser("~/.local/share/neon/"))
-    model_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.8.1-models.pbmm'
-    scorer_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.8.1-models.scorer'
+    model_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.pbmm'
+    scorer_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer'
     model_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.pbmm")
     scorer_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
 
