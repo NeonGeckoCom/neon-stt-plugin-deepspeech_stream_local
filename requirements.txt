@@ -1,1 +1,4 @@
 deepspeech
+setuptools~=54.0.0
+numpy~=1.20.1
+neon_utils@git+https://github.com/NeonGeckoCom/neon-skill-utils
