@@ -24,11 +24,50 @@ import deepspeech
 import numpy as np
 import time
 import math
-
 from queue import Queue
+from neon_utils.plugins.stt import StreamingSTT, StreamThread
+from neon_utils.logger import LOG
+LOG.name = "stt_plugin"
 
-from mycroft.stt import StreamingSTT, StreamThread
-from mycroft.util.log import LOG
+
+class DeepSpeechLocalStreamingSTT(StreamingSTT):
+    """
+        Streaming STT interface for DeepSpeech
+    """
+
+    def __init__(self, results_event, config=None):
+        super(DeepSpeechLocalStreamingSTT, self).__init__(results_event, config)
+        # override language with module specific language selection
+        self.language = self.config.get('lang') or self.lang
+        self.queue = None
+        if not self.language.startswith("en"):
+            raise ValueError("DeepSpeech is currently english only")
+
+        model_path = self.config.get("model_path") or \
+            os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.pbmm")
+        scorer_path = self.config.get("scorer_path") or \
+            os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.scorer")
+        if not os.path.isfile(model_path):
+            LOG.error("You need to provide a valid model file")
+            LOG.error(model_path)
+            LOG.info("download a model from https://github.com/mozilla/DeepSpeech")
+            raise FileNotFoundError
+        if not scorer_path or not os.path.isfile(scorer_path):
+            LOG.warning("You should provide a valid scorer")
+            LOG.info("download scorer from https://github.com/mozilla/DeepSpeech")
+
+        self.client = deepspeech.Model(model_path)
+        if scorer_path:
+            self.client.enableExternalScorer(scorer_path)
+
+    def create_streaming_thread(self):
+        self.queue = Queue()
+        return DeepSpeechLocalStreamThread(
+            self.queue,
+            self.language,
+            self.client,
+            self.results_event
+        )
 
 
 class DeepSpeechLocalStreamThread(StreamThread):
@@ -36,6 +75,7 @@ class DeepSpeechLocalStreamThread(StreamThread):
         super().__init__(queue, lang)
         self.client = client
         self.results_event = results_event
+        self.transcriptions = []
 
     def handle_audio_stream(self, audio, language):
         short_normalize = (1.0 / 32768.0)
@@ -69,52 +109,18 @@ class DeepSpeechLocalStreamThread(StreamThread):
             previous_intermediate_result = current_intermediate_result
             if current_time > end_time:
                 break
-        responses = stream.finishStream()
-        LOG.debug(f"The responses are {responses}")
-        self.transcriptions = responses
-
+        responses = stream.finishStreamWithMetadata(num_results=5)
+        self.transcriptions = []
+        # LOG.debug(f"The responses are {responses}")
+        for transcript in responses.transcripts:
+            letters = [token.text for token in transcript.tokens]
+            self.transcriptions.append("".join(letters).strip())
+        # self.transcriptions = responses
+        LOG.debug(self.transcriptions)
         if has_data:  # Model sometimes returns transcripts for absolute silence
             LOG.debug(f"Audio had data!!")
         else:
             LOG.warning(f"Audio was empty!")
-            self.transcriptions = None
+            self.transcriptions = []
         self.results_event.set()
         return self.transcriptions
-
-
-class DeepSpeechLocalStreamingSTT(StreamingSTT):
-    """
-        Streaming STT interface for DeepSpeech
-    """
-
-    def __init__(self, results_event):
-        super(DeepSpeechLocalStreamingSTT, self).__init__(results_event)
-        # override language with module specific language selection
-        self.language = self.config.get('lang') or self.lang
-        if not self.language.startswith("en"):
-            raise ValueError("DeepSpeech is currently english only")
-
-        model_path = self.config.get("model_path",
-                                     os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.pbmm"))
-        scorer_path = self.config.get("scorer_path",
-                                      os.path.expanduser("~/.local/share/neon/deepspeech-0.8.1-models.scorer"))
-        if not os.path.isfile(model_path):
-            LOG.error("You need to provide a valid model file")
-            LOG.info("download a model from https://github.com/mozilla/DeepSpeech")
-            raise FileNotFoundError
-        if not scorer_path or not os.path.isfile(scorer_path):
-            LOG.warning("You should provide a valid scorer")
-            LOG.info("download scorer from https://github.com/mozilla/DeepSpeech")
-
-        self.client = deepspeech.Model(model_path)
-        if scorer_path:
-            self.client.enableExternalScorer(scorer_path)
-
-    def create_streaming_thread(self):
-        self.queue = Queue()
-        return DeepSpeechLocalStreamThread(
-            self.queue,
-            self.language,
-            self.client,
-            self.results_event
-        )
