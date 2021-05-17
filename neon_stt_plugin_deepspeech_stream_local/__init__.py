@@ -27,7 +27,10 @@ import numpy as np
 import time
 import math
 from queue import Queue
-from neon_utils.plugins.stt import StreamingSTT, StreamThread
+try:
+    from neon_speech.stt import StreamingSTT, StreamThread
+except ImportError:
+    from mycroft.stt import StreamingSTT, StreamThread
 from neon_utils.logger import LOG
 LOG.name = "stt_plugin"
 
