@@ -28,7 +28,7 @@ import time
 import math
 from queue import Queue
 try:
-    from neon_speech.stt import StreamingSTT, StreamThread
+    from neon_utils.plugins.stt import StreamingSTT, StreamThread  # TODO: neon_core?
 except ImportError:
     from mycroft.stt import StreamingSTT, StreamThread
 from neon_utils.logger import LOG
