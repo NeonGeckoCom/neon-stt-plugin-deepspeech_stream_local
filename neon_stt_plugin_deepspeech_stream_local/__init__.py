@@ -22,6 +22,8 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+from inspect import signature
+
 import deepspeech
 import numpy as np
 import time
@@ -41,7 +43,11 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
     """
 
     def __init__(self, results_event, config=None):
-        super(DeepSpeechLocalStreamingSTT, self).__init__(results_event, config)
+        if len(signature(super(DeepSpeechLocalStreamingSTT, self).__init__).parameters) == 3:
+            super(DeepSpeechLocalStreamingSTT, self).__init__(results_event, config)
+        else:
+            LOG.warning(f"Shorter Signature Found; config will be ignored and results_event will not be handled!")
+            super(DeepSpeechLocalStreamingSTT, self).__init__()
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
         self.queue = None
