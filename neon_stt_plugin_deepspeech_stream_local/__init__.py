@@ -48,6 +48,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         else:
             LOG.warning(f"Shorter Signature Found; config will be ignored and results_event will not be handled!")
             super(DeepSpeechLocalStreamingSTT, self).__init__()
+            self.results_event = None
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
         self.queue = None
@@ -133,5 +134,6 @@ class DeepSpeechLocalStreamThread(StreamThread):
         else:
             LOG.warning(f"Audio was empty!")
             self.transcriptions = []
-        self.results_event.set()
+        if results_event:
+            self.results_event.set()
         return self.transcriptions
