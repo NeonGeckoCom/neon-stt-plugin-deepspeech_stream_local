@@ -43,7 +43,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
     """
 
     def __init__(self, results_event, config=None):
-        if len(signature(super(DeepSpeechLocalStreamingSTT, self).__init__).parameters) == 3:
+        if len(signature(super(DeepSpeechLocalStreamingSTT, self).__init__).parameters) == 2:
             super(DeepSpeechLocalStreamingSTT, self).__init__(results_event, config)
         else:
             LOG.warning(f"Shorter Signature Found; config will be ignored and results_event will not be handled!")
@@ -134,6 +134,6 @@ class DeepSpeechLocalStreamThread(StreamThread):
         else:
             LOG.warning(f"Audio was empty!")
             self.transcriptions = []
-        if results_event:
+        if self.results_event:
             self.results_event.set()
         return self.transcriptions
