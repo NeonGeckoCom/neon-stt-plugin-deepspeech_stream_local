@@ -30,7 +30,7 @@ import time
 import math
 from queue import Queue
 try:
-    from neon_speech.stt import StreamingSTT, StreamThread  # TODO: neon_core?
+    from neon_speech.stt import StreamingSTT, StreamThread
 except ImportError:
     from ovos_plugin_manager.templates.stt import StreamingSTT, StreamThread
 from neon_utils.logger import LOG
@@ -131,8 +131,10 @@ class DeepSpeechLocalStreamThread(StreamThread):
         LOG.debug(self.transcriptions)
         if has_data:  # Model sometimes returns transcripts for absolute silence
             LOG.debug(f"Audio had data!!")
+            self.text = self.transcriptions[0]
         else:
             LOG.warning(f"Audio was empty!")
+            self.text = None
             self.transcriptions = []
         if self.results_event:
             self.results_event.set()

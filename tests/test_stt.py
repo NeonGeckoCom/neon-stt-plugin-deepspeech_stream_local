@@ -51,6 +51,7 @@ class TestGetSTT(unittest.TestCase):
                 pass
 
             result = self.stt.execute(None)
+            self.assertIsNotNone(result, f"Error processing: {file}")
             self.assertIn(transcription, result)
 
 
