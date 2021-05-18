@@ -1,5 +1,5 @@
 deepspeech==0.9.3
 numpy~=1.19.5
 SpeechRecognition~=3.8.1
+ovos-plugin-manager~=0.0
 neon_utils@git+https://github.com/NeonGeckoCom/neon-skill-utils
-holmesv@git+https://github.com/hellochatterbox/holmesv
