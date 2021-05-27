@@ -17,9 +17,26 @@
 # US Patents 2008-2021: US7424516, US20140161250, US20140177813, US8638908, US8068604, US8553852, US10530923, US10530924
 # China Patent: CN102017585  -  Europe Patent: EU2156652  -  Patents Pending
 
-import os
-import requests
 from setuptools import setup
+from os import getenv, path
+
+
+def get_requirements(requirements_filename: str):
+    requirements_file = path.join(path.abspath(path.dirname(__file__)), "requirements", requirements_filename)
+    with open(requirements_file, 'r', encoding='utf-8') as r:
+        requirements = r.readlines()
+    requirements = [r.strip() for r in requirements if r.strip() and not r.strip().startswith("#")]
+
+    for i in range(0, len(requirements)):
+        r = requirements[i]
+        if "@" in r:
+            parts = [p.lower() if p.strip().startswith("git+http") else p for p in r.split('@')]
+            r = "@".join(parts)
+        if getenv("GITHUB_TOKEN"):
+            if "github.com" in r:
+                requirements[i] = r.replace("github.com", f"{getenv('GITHUB_TOKEN')}@github.com")
+    return requirements
+
 
 PLUGIN_ENTRY_POINT = 'deepspeech_stream_local = neon_stt_plugin_deepspeech_stream_local:DeepSpeechLocalStreamingSTT'
 
@@ -34,31 +51,6 @@ with open("./version.py", "r", encoding="utf-8") as v:
             else:
                 version = line.split("'")[1]
 
-with open("./requirements.txt", "r", encoding="utf-8") as r:
-    requirements = r.readlines()
-
-try:
-    if not os.path.isdir(os.path.expanduser("~/.local/share/neon/")):
-        os.makedirs(os.path.expanduser("~/.local/share/neon/"))
-    model_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.pbmm'
-    scorer_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer'
-    model_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.pbmm")
-    scorer_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
-
-    if not os.path.isfile(model_path):
-        print(f"Downloading {model_url}")
-        model = requests.get(model_url, allow_redirects=True)
-        with open(model_path, "wb") as out:
-            out.write(model.content)
-
-    if not os.path.isfile(scorer_path):
-        print(f"Downloading {scorer_url}")
-        scorer = requests.get(scorer_url, allow_redirects=True)
-        with open(scorer_path, "wb") as out:
-            out.write(scorer.content)
-except Exception as e:
-    print(f"Error getting deepspeech models! {e}")
-
 setup(
     name='neon-stt-plugin-deepspeech_stream_local',
     version=version,
@@ -70,7 +62,7 @@ setup(
     author_email='developers@neon.ai',
     license='NeonAI License v1.0',
     packages=['neon_stt_plugin_deepspeech_stream_local'],
-    install_requires=requirements,
+    install_requires=get_requirements("requirements.txt"),
     zip_safe=True,
     classifiers=[
         'Intended Audience :: Developers',

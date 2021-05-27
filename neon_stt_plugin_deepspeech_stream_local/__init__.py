@@ -29,6 +29,9 @@ import numpy as np
 import time
 import math
 from queue import Queue
+
+from neon_stt_plugin_deepspeech_stream_local.util import get_model
+
 try:
     from neon_speech.stt import StreamingSTT, StreamThread
 except ImportError:
@@ -60,16 +63,16 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         scorer_path = self.config.get("scorer_path") or \
             os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
         if not os.path.isfile(model_path):
-            LOG.error("You need to provide a valid model file")
+            LOG.error("Model not found and will be downloaded!")
             LOG.error(model_path)
-            LOG.info("download a model from https://github.com/mozilla/DeepSpeech")
-            raise FileNotFoundError
+            get_model()
+
+        self.client = deepspeech.Model(model_path)
+
         if not scorer_path or not os.path.isfile(scorer_path):
             LOG.warning("You should provide a valid scorer")
             LOG.info("download scorer from https://github.com/mozilla/DeepSpeech")
-
-        self.client = deepspeech.Model(model_path)
-        if scorer_path:
+        else:
             self.client.enableExternalScorer(scorer_path)
 
     def create_streaming_thread(self):

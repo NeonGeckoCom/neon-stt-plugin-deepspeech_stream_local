@@ -23,25 +23,27 @@
 import os
 import requests
 
-try:
-    if not os.path.isdir(os.path.expanduser("~/.local/share/neon/")):
-        os.makedirs(os.path.expanduser("~/.local/share/neon/"))
-    model_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.pbmm'
-    scorer_url = 'https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer'
-    model_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.pbmm")
-    scorer_path = os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
 
-    if not os.path.isfile(model_path):
-        print(f"Downloading {model_url}")
-        model = requests.get(model_url, allow_redirects=True)
-        with open(model_path, "wb") as out:
-            out.write(model.content)
+def get_model(ver="0.9.3"):
+    try:
+        if not os.path.isdir(os.path.expanduser("~/.local/share/neon/")):
+            os.makedirs(os.path.expanduser("~/.local/share/neon/"))
+        model_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.pbmm'
+        scorer_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.scorer'
+        model_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.pbmm")
+        scorer_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.scorer")
 
-    if not os.path.isfile(scorer_path):
-        print(f"Downloading {scorer_url}")
-        scorer = requests.get(scorer_url, allow_redirects=True)
-        with open(scorer_path, "wb") as out:
-            out.write(scorer.content)
-        print(f"Model Downloaded to {model_path}")
-except Exception as e:
-    print(f"Error getting deepspeech models! {e}")
+        if not os.path.isfile(model_path):
+            print(f"Downloading {model_url}")
+            model = requests.get(model_url, allow_redirects=True)
+            with open(model_path, "wb") as out:
+                out.write(model.content)
+
+        if not os.path.isfile(scorer_path):
+            print(f"Downloading {scorer_url}")
+            scorer = requests.get(scorer_url, allow_redirects=True)
+            with open(scorer_path, "wb") as out:
+                out.write(scorer.content)
+            print(f"Model Downloaded to {model_path}")
+    except Exception as e:
+        print(f"Error getting deepspeech models! {e}")
