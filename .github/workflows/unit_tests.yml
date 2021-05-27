@@ -19,11 +19,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          sudo apt install ffmpeg
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Get Deepspeech Model
-        run: |
-          python get_model.py
+          pip install -r requirements/requirements.txt
+          pip install -r requirements/test_requirements.txt
+
       - name: Test Deepspeech STT
         run: |
           pip install pytest pytest-timeout
