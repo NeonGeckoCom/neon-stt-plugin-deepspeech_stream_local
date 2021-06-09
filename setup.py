@@ -32,9 +32,10 @@ def get_requirements(requirements_filename: str):
         if "@" in r:
             parts = [p.lower() if p.strip().startswith("git+http") else p for p in r.split('@')]
             r = "@".join(parts)
-        if getenv("GITHUB_TOKEN"):
-            if "github.com" in r:
-                requirements[i] = r.replace("github.com", f"{getenv('GITHUB_TOKEN')}@github.com")
+            if getenv("GITHUB_TOKEN"):
+                if "github.com" in r:
+                    r = r.replace("github.com", f"{getenv('GITHUB_TOKEN')}@github.com")
+            requirements[i] = r
     return requirements
 
 
