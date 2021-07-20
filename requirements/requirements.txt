@@ -2,4 +2,4 @@ deepspeech==0.9.3
 numpy~=1.19.5
 SpeechRecognition~=3.8.1
 ovos-plugin-manager
-neon_utils @ git+https://github.com/NeonGeckoCom/neon-skill-utils
+neon-utils>=0.5.7
