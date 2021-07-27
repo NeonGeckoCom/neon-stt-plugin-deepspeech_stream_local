@@ -24,11 +24,14 @@ import os
 import requests
 
 
-def get_model(ver="0.9.3"):
+def get_model(ver="0.9.3", tflite=False):
     try:
         if not os.path.isdir(os.path.expanduser("~/.local/share/neon/")):
             os.makedirs(os.path.expanduser("~/.local/share/neon/"))
-        model_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.pbmm'
+        if tflite:
+            model_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.tflite'
+        else:
+            model_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.pbmm'
         scorer_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.scorer'
         model_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.pbmm")
         scorer_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.scorer")
