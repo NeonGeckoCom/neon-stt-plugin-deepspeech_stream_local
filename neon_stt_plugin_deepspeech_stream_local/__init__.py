@@ -76,6 +76,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
             LOG.info("download scorer from https://github.com/mozilla/DeepSpeech")
         else:
             self.client.enableExternalScorer(scorer_path)
+        LOG.debug("Deepspeech STT Ready")
 
     def create_streaming_thread(self):
         self.queue = Queue()
