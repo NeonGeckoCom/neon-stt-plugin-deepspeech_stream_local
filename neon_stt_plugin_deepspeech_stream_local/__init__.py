@@ -29,7 +29,7 @@ import numpy as np
 import time
 import math
 from queue import Queue
-
+from neon_utils.configuration_utils import get_neon_device_type
 from neon_stt_plugin_deepspeech_stream_local.util import get_model
 
 try:
@@ -58,14 +58,16 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         if not self.language.startswith("en"):
             raise ValueError("DeepSpeech is currently english only")
 
+        default_model = "deepspeech-0.9.3-models.tflite" if get_neon_device_type() in ("pi", "neonPi") else \
+            "deepspeech-0.9.3-models.pbmm"
         model_path = self.config.get("model_path") or \
-            os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.pbmm")
+            os.path.expanduser(f"~/.local/share/neon/{default_model}")
         scorer_path = self.config.get("scorer_path") or \
             os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
         if not os.path.isfile(model_path):
             LOG.error("Model not found and will be downloaded!")
             LOG.error(model_path)
-            get_model()
+            get_model(tflite=model_path.endswith(".tflite"))
 
         self.client = deepspeech.Model(model_path)
 
@@ -74,6 +76,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
             LOG.info("download scorer from https://github.com/mozilla/DeepSpeech")
         else:
             self.client.enableExternalScorer(scorer_path)
+        LOG.debug("Deepspeech STT Ready")
 
     def create_streaming_thread(self):
         self.queue = Queue()
