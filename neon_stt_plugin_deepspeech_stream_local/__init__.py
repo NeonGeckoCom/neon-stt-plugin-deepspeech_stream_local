@@ -67,7 +67,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         if not os.path.isfile(model_path):
             LOG.error("Model not found and will be downloaded!")
             LOG.error(model_path)
-            get_model()
+            get_model(tflite=model_path.endswith(".tflite"))
 
         self.client = deepspeech.Model(model_path)
 
