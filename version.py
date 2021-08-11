@@ -18,3 +18,4 @@
 # China Patent: CN102017585  -  Europe Patent: EU2156652  -  Patents Pending
 
 __version__ = "0.0.7"
+
