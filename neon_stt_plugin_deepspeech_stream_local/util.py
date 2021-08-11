@@ -30,10 +30,11 @@ def get_model(ver="0.9.3", tflite=False):
             os.makedirs(os.path.expanduser("~/.local/share/neon/"))
         if tflite:
             model_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.tflite'
+            model_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.tflite")
         else:
             model_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.pbmm'
+            model_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.pbmm")
         scorer_url = f'https://github.com/mozilla/DeepSpeech/releases/download/v{ver}/deepspeech-{ver}-models.scorer'
-        model_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.pbmm")
         scorer_path = os.path.expanduser(f"~/.local/share/neon/deepspeech-{ver}-models.scorer")
 
         if not os.path.isfile(model_path):
