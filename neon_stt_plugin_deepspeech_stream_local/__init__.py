@@ -135,11 +135,15 @@ class DeepSpeechLocalStreamThread(StreamThread):
             self.transcriptions.append("".join(letters).strip())
         # self.transcriptions = responses
         LOG.debug(self.transcriptions)
-        if has_data:  # Model sometimes returns transcripts for absolute silence
-            LOG.debug(f"Audio had data!!")
+        if not self.transcriptions[0]:
+            LOG.info("First transcription is empty")
+            self.text = None
+            self.transcriptions = []
+        elif has_data:  # Model sometimes returns transcripts for absolute silence
+            LOG.debug("Audio had data")
             self.text = self.transcriptions[0]
         else:
-            LOG.warning(f"Audio was empty!")
+            LOG.warning("Audio was empty")
             self.text = None
             self.transcriptions = []
         if self.results_event:
