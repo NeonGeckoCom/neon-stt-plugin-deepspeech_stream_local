@@ -95,6 +95,8 @@ class DeepSpeechLocalStreamThread(StreamThread):
         self.results_event = results_event
         self.transcriptions = []
 
+        self._invalid_first_transcriptions = ["he"]  # Known bad transcriptions that should be of lower confidence
+
     def handle_audio_stream(self, audio, language):
         short_normalize = (1.0 / 32768.0)
         swidth = 2
@@ -140,6 +142,9 @@ class DeepSpeechLocalStreamThread(StreamThread):
             self.text = None
             self.transcriptions = []
         elif has_data:  # Model sometimes returns transcripts for absolute silence
+            if self.transcriptions[0] in self._invalid_first_transcriptions:
+                LOG.info(f"Pushing {self.transcriptions[0]} to end of list")
+                self.transcriptions.append(self.transcriptions.pop(0))
             LOG.debug("Audio had data")
             self.text = self.transcriptions[0]
         else:
@@ -148,4 +153,5 @@ class DeepSpeechLocalStreamThread(StreamThread):
             self.transcriptions = []
         if self.results_event:
             self.results_event.set()
+        LOG.debug(f"self.text={self.text}")
         return self.transcriptions
