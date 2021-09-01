@@ -1,1 +1,3 @@
-holmesv
+holmesv==2021.6.30a24
+pytest
+pytest-timeout

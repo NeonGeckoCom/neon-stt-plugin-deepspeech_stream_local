@@ -27,7 +27,6 @@ jobs:
 
       - name: Test Deepspeech STT
         run: |
-          pip install pytest pytest-timeout
           pytest tests/test_stt.py --junitxml=tests/stt-test-results.xml
       - name: Upload STT test results
         uses: actions/upload-artifact@v2
