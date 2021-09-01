@@ -53,6 +53,7 @@ class TestGetSTT(unittest.TestCase):
             result = self.stt.execute(None)
             self.assertIsNotNone(result, f"Error processing: {file}")
             self.assertIn(transcription, result)
+            self.assertNotEqual(result[0], 'he')
 
 
 if __name__ == '__main__':
