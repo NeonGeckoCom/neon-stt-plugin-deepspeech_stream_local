@@ -153,4 +153,5 @@ class DeepSpeechLocalStreamThread(StreamThread):
             self.transcriptions = []
         if self.results_event:
             self.results_event.set()
+        LOG.debug(f"self.text={self.text}")
         return self.transcriptions
