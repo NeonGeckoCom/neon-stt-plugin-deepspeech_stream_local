@@ -143,6 +143,7 @@ class DeepSpeechLocalStreamThread(StreamThread):
             self.transcriptions = []
         elif has_data:  # Model sometimes returns transcripts for absolute silence
             if self.transcriptions[0] in self._invalid_first_transcriptions:
+                LOG.info(f"Pushing {self.transcriptions[0]} to end of list")
                 self.transcriptions.append(self.transcriptions.pop(0))
             LOG.debug("Audio had data")
             self.text = self.transcriptions[0]
