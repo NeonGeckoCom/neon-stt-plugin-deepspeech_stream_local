@@ -4,4 +4,4 @@ SpeechRecognition~=3.8.1
 ovos-plugin-manager
 neon-utils>=0.5.7
 phoneme_guesser
-ovos-plugin-manager<=0.0.1a8
+ovos-plugin-manager~=0.0.1
