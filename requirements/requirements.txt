@@ -3,4 +3,4 @@ numpy~=1.19.5
 SpeechRecognition~=3.8.1
 neon-utils>=0.5.7
 phoneme_guesser
-ovos-plugin-manager~=0.0.1,>=0.0.1post1
+ovos-plugin-manager>=0.0.2a1
