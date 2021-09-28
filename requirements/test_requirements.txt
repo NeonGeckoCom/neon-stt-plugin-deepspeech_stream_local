@@ -1,3 +1,3 @@
-holmesv
+neon-audio
 pytest
 pytest-timeout
