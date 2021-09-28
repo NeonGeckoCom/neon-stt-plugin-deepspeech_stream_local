@@ -25,7 +25,7 @@ jobs:
   unit_tests:
     strategy:
       matrix:
-        python-version: [ 3.6, 3.8, 3.9 ]
+        python-version: [ 3.6, 3.7, 3.8, 3.9 ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install ffmpeg
+          sudo apt install ffmpeg portaudio19-dev python3-pyaudio
           python -m pip install --upgrade pip
           pip install -r requirements/requirements.txt
           pip install -r requirements/test_requirements.txt

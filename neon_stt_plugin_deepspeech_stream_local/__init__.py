@@ -46,11 +46,13 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
     """
 
     def __init__(self, results_event, config=None):
-        if len(signature(super(DeepSpeechLocalStreamingSTT, self).__init__).parameters) == 2:
-            super(DeepSpeechLocalStreamingSTT, self).__init__(results_event, config)
-        else:
-            LOG.warning(f"Shorter Signature Found; config will be ignored and results_event will not be handled!")
+        if len(signature(super(DeepSpeechLocalStreamingSTT, self).__init__).parameters) == 0:
+            LOG.warning(f"Deprecated Signature Found; config will be ignored and results_event will not be handled!")
             super(DeepSpeechLocalStreamingSTT, self).__init__()
+        else:
+            super(DeepSpeechLocalStreamingSTT, self).__init__(results_event=results_event, config=config)
+
+        if not hasattr(self, "results_event"):
             self.results_event = None
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
@@ -58,8 +60,8 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         if not self.language.startswith("en"):
             raise ValueError("DeepSpeech is currently english only")
 
-        default_model = "deepspeech-0.9.3-models.tflite" if get_neon_device_type() in ("pi", "neonPi") else \
-            "deepspeech-0.9.3-models.pbmm"
+        default_model = "deepspeech-0.9.3-models.tflite" if \
+            get_neon_device_type() in ("pi", "neonPi", "mycroft_mark_2") else "deepspeech-0.9.3-models.pbmm"
         model_path = self.config.get("model_path") or \
             os.path.expanduser(f"~/.local/share/neon/{default_model}")
         scorer_path = self.config.get("scorer_path") or \
