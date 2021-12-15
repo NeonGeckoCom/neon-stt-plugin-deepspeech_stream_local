@@ -37,7 +37,6 @@ try:
 except ImportError:
     from ovos_plugin_manager.templates.stt import StreamingSTT, StreamThread
 from neon_utils.logger import LOG
-LOG.name = "stt_plugin"
 
 
 class DeepSpeechLocalStreamingSTT(StreamingSTT):
