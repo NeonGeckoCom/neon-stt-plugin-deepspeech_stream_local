@@ -13,7 +13,7 @@ license_overrides = {
     'psutil': 'BSD3'
 }
 # explicitly allow these packages that would fail otherwise
-whitelist = []
+whitelist = ['neon-stt-plugin-deepspeech_stream_local']
 
 # validation flags
 allow_nonfree = False

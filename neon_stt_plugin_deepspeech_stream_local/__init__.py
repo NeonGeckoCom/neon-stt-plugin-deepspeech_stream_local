@@ -73,8 +73,8 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         try:
             self.client = deepspeech.Model(model_path)
         except Exception as e:
-            LOG.exception(f"Failed to load {model_path}")
-            raise e
+            LOG.error(f"Failed to load {model_path}")
+            LOG.exception(e)
 
         if not scorer_path or not os.path.isfile(scorer_path):
             LOG.warning("You should provide a valid scorer")
