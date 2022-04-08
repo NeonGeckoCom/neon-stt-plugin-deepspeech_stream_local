@@ -10,7 +10,8 @@ license_overrides = {
     'yt-dlp': "Unlicense",
     'pyxdg': 'GPL-2.0',
     'ptyprocess': 'ISC license',
-    'psutil': 'BSD3'
+    'psutil': 'BSD3',
+    'soupsieve': 'MIT'
 }
 # explicitly allow these packages that would fail otherwise
 whitelist = ['neon-stt-plugin-deepspeech_stream_local']
