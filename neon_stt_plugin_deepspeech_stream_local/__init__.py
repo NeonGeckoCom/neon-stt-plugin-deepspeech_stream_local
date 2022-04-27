@@ -22,6 +22,7 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import shutil
 from inspect import signature
 
 import deepspeech
@@ -29,8 +30,8 @@ import numpy as np
 import time
 import math
 from queue import Queue
-from neon_utils.configuration_utils import get_neon_device_type
 from neon_stt_plugin_deepspeech_stream_local.util import get_model
+from huggingface_hub import hf_hub_download
 
 try:
     from neon_speech.stt import StreamingSTT, StreamThread
@@ -56,41 +57,68 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
         self.queue = None
-        if not self.language.startswith("en"):
-            raise ValueError("DeepSpeech is currently english only")
+        self._clients = dict()
+        # if not self.language.startswith("en"):
+        #     raise ValueError("DeepSpeech is currently english only")
+        #
+        # default_model = "deepspeech-0.9.3-models.tflite" if \
+        #     get_neon_device_type() in ("pi", "neonPi", "mycroft_mark_2") else "deepspeech-0.9.3-models.pbmm"
+        # model_path = self.config.get("model_path") or \
+        #     os.path.expanduser(f"~/.local/share/neon/{default_model}")
+        # scorer_path = self.config.get("scorer_path") or \
+        #     os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
+        # if not os.path.isfile(model_path):
+        #     LOG.info("Model not found and will be downloaded!")
+        #     LOG.info(model_path)
+        #     get_model(tflite=model_path.endswith(".tflite"))
 
-        default_model = "deepspeech-0.9.3-models.tflite" if \
-            get_neon_device_type() in ("pi", "neonPi", "mycroft_mark_2") else "deepspeech-0.9.3-models.pbmm"
-        model_path = self.config.get("model_path") or \
-            os.path.expanduser(f"~/.local/share/neon/{default_model}")
-        scorer_path = self.config.get("scorer_path") or \
-            os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
-        if not os.path.isfile(model_path):
-            LOG.info("Model not found and will be downloaded!")
-            LOG.info(model_path)
-            get_model(tflite=model_path.endswith(".tflite"))
-
-        try:
-            self.client = deepspeech.Model(model_path)
-        except Exception as e:
-            LOG.error(f"Failed to load {model_path}")
-            LOG.exception(e)
-
-        if not scorer_path or not os.path.isfile(scorer_path):
-            LOG.warning("You should provide a valid scorer")
-            LOG.info("download scorer from https://github.com/mozilla/DeepSpeech")
-        else:
-            self.client.enableExternalScorer(scorer_path)
+        self._init_language_model(self.language.split('-')[0], True)
         LOG.debug("Deepspeech STT Ready")
 
-    def create_streaming_thread(self):
+    def create_streaming_thread(self, lang=None):
+        lang = (lang or self.lang).split('-')[0]
         self.queue = Queue()
+        if lang not in self._clients:
+            self._init_language_model(lang)
+        client = self._clients.get(lang)
         return DeepSpeechLocalStreamThread(
             self.queue,
             self.language,
-            self.client,
+            client,
             self.results_event
         )
+
+    def _init_language_model(self, lang: str, cache: bool = True):
+        if lang not in self._clients:
+            model, scorer = self.download_model(lang)
+            LOG.info(f"Loading model for {lang}")
+            client = deepspeech.Model(model)
+            if scorer and os.path.isfile(scorer):
+                LOG.info(f"Enabling scorer for {lang}")
+                client.enableExternalScorer(scorer)
+            if cache:
+                self._clients[lang] = client
+            return client
+
+    def download_model(self, lang: str = None):
+        '''
+        Downloading model and scorer for the specific language
+        from Huggingface.
+        Creating a folder  'polyglot_models' in xdg_data_home
+        Creating a language folder in 'polyglot_models' folder
+        '''
+        lang = lang or self.lang
+        repo_id = f"NeonBohdan/stt-polyglot-{lang.split('-')[0]}"
+        download_path = hf_hub_download(repo_id, filename="output_graph.pbmm")
+        scorer_file_path = hf_hub_download(repo_id, filename="kenlm.scorer")
+        # Model path must include the `pbmm` file extension
+        # TODO: Consider renaming files and moving to ~/.local/share/neon
+        model_path = f"{download_path}.pbmm"
+        if not os.path.isfile(model_path) or \
+                os.path.getmtime(model_path) != os.path.getmtime(download_path):
+            LOG.info("Getting new model from huggingface")
+            shutil.copy2(download_path, model_path)
+        return model_path, scorer_file_path
 
 
 class DeepSpeechLocalStreamThread(StreamThread):
