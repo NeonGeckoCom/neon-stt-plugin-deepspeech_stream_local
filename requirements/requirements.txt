@@ -3,3 +3,4 @@ numpy~=1.19
 SpeechRecognition~=3.8
 neon-utils~=0.5,>=0.5.7
 ovos-plugin-manager~=0.0.1
+huggingface-hub~=0.4

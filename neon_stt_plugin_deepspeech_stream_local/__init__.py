@@ -22,6 +22,7 @@
 # USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import shutil
 from inspect import signature
 
 import deepspeech
@@ -29,8 +30,8 @@ import numpy as np
 import time
 import math
 from queue import Queue
-from neon_utils.configuration_utils import get_neon_device_type
 from neon_stt_plugin_deepspeech_stream_local.util import get_model
+from huggingface_hub import hf_hub_download
 
 try:
     from neon_speech.stt import StreamingSTT, StreamThread
@@ -56,31 +57,9 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
         self.queue = None
-        if not self.language.startswith("en"):
-            raise ValueError("DeepSpeech is currently english only")
+        self._clients = dict()
 
-        default_model = "deepspeech-0.9.3-models.tflite" if \
-            get_neon_device_type() in ("pi", "neonPi", "mycroft_mark_2") else "deepspeech-0.9.3-models.pbmm"
-        model_path = self.config.get("model_path") or \
-            os.path.expanduser(f"~/.local/share/neon/{default_model}")
-        scorer_path = self.config.get("scorer_path") or \
-            os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
-        if not os.path.isfile(model_path):
-            LOG.info("Model not found and will be downloaded!")
-            LOG.info(model_path)
-            get_model(tflite=model_path.endswith(".tflite"))
-
-        try:
-            self.client = deepspeech.Model(model_path)
-        except Exception as e:
-            LOG.error(f"Failed to load {model_path}")
-            LOG.exception(e)
-
-        if not scorer_path or not os.path.isfile(scorer_path):
-            LOG.warning("You should provide a valid scorer")
-            LOG.info("download scorer from https://github.com/mozilla/DeepSpeech")
-        else:
-            self.client.enableExternalScorer(scorer_path)
+        self.init_language_model(self.language.split('-')[0], True)
         LOG.debug("Deepspeech STT Ready")
 
     def create_streaming_thread(self):
@@ -88,15 +67,50 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         return DeepSpeechLocalStreamThread(
             self.queue,
             self.language,
-            self.client,
+            self,
             self.results_event
         )
 
+    def init_language_model(self, lang: str, cache: bool = True):
+        lang = (lang or self.lang).split('-')[0]
+        if lang not in self._clients:
+            model, scorer = self.download_model(lang)
+            LOG.info(f"Loading model for {lang}")
+            client = deepspeech.Model(model)
+            if scorer and os.path.isfile(scorer):
+                LOG.info(f"Enabling scorer for {lang}")
+                client.enableExternalScorer(scorer)
+            if cache:
+                self._clients[lang] = client
+            else:
+                return client
+        return self._clients.get(lang)
+
+    def download_model(self, lang: str = None):
+        '''
+        Downloading model and scorer for the specific language
+        from Huggingface.
+        Creating a folder  'polyglot_models' in xdg_data_home
+        Creating a language folder in 'polyglot_models' folder
+        '''
+        lang = lang or self.lang
+        repo_id = f"NeonBohdan/stt-polyglot-{lang.split('-')[0]}"
+        download_path = hf_hub_download(repo_id, filename="output_graph.pbmm")
+        scorer_file_path = hf_hub_download(repo_id, filename="kenlm.scorer")
+        # Model path must include the `pbmm` file extension
+        # TODO: Consider renaming files and moving to ~/.local/share/neon
+        model_path = f"{download_path}.pbmm"
+        if not os.path.isfile(model_path) or \
+                os.path.getmtime(model_path) != os.path.getmtime(download_path):
+            LOG.info("Getting new model from huggingface")
+            shutil.copy2(download_path, model_path)
+        return model_path, scorer_file_path
+
 
 class DeepSpeechLocalStreamThread(StreamThread):
-    def __init__(self, queue, lang, client, results_event):
+    def __init__(self, queue, lang, stt_class, results_event):
         super().__init__(queue, lang)
-        self.client = client
+        self.get_client = stt_class.init_language_model
         self.results_event = results_event
         self.transcriptions = []
 
@@ -117,7 +131,8 @@ class DeepSpeechLocalStreamThread(StreamThread):
             rms_value = math.pow(sum_squares / count, 0.5)
             return rms_value * 1000
 
-        stream = self.client.createStream()
+        LOG.info(f"Getting client stream for: {language}")
+        stream = self.get_client(language).createStream()
         current_time = time.time()
         end_time = current_time + timeout_length
         previous_intermediate_result, current_intermediate_result = '', ''
