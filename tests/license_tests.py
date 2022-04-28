@@ -18,7 +18,8 @@ license_overrides = {
     "typing-extensions": "PSF"
 }
 # explicitly allow these packages that would fail otherwise
-whitelist = ['neon-stt-plugin-deepspeech_stream_local']
+whitelist = ['neon-stt-plugin-deepspeech_stream_local',
+             'neon-api-proxy']
 
 # validation flags
 allow_nonfree = False
