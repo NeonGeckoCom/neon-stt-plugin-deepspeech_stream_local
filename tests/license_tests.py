@@ -12,7 +12,9 @@ license_overrides = {
     'ptyprocess': 'ISC license',
     'psutil': 'BSD3',
     'soupsieve': 'MIT',
-    'setuptools': 'MIT'
+    'setuptools': 'MIT',
+    "python-dateutil": "Apache-2.0",
+    "pyparsing": "MIT"
 }
 # explicitly allow these packages that would fail otherwise
 whitelist = ['neon-stt-plugin-deepspeech_stream_local']
