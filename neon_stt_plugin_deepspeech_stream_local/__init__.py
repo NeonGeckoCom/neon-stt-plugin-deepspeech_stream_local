@@ -58,46 +58,21 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         self.language = self.config.get('lang') or self.lang
         self.queue = None
         self._clients = dict()
-        # if not self.language.startswith("en"):
-        #     raise ValueError("DeepSpeech is currently english only")
-        #
-        # default_model = "deepspeech-0.9.3-models.tflite" if \
-        #     get_neon_device_type() in ("pi", "neonPi", "mycroft_mark_2") else "deepspeech-0.9.3-models.pbmm"
-        # model_path = self.config.get("model_path") or \
-        #     os.path.expanduser(f"~/.local/share/neon/{default_model}")
-        # scorer_path = self.config.get("scorer_path") or \
-        #     os.path.expanduser("~/.local/share/neon/deepspeech-0.9.3-models.scorer")
-        # if not os.path.isfile(model_path):
-        #     LOG.info("Model not found and will be downloaded!")
-        #     LOG.info(model_path)
-        #     get_model(tflite=model_path.endswith(".tflite"))
 
-        self._init_language_model(self.language.split('-')[0], True)
+        self.init_language_model(self.language.split('-')[0], True)
         LOG.debug("Deepspeech STT Ready")
 
-    def create_streaming_thread(self, lang=None):
-        lang = (lang or self.lang).split('-')[0]
+    def create_streaming_thread(self):
         self.queue = Queue()
-        LOG.info(f"Creating streaming thread for language: {lang}")
-        if lang not in self._clients:
-            self._init_language_model(lang)
-        client = self._clients.get(lang)
         return DeepSpeechLocalStreamThread(
             self.queue,
             self.language,
-            client,
+            self,
             self.results_event
         )
 
-    def stream_start(self, language=None):
-        # TODO: Patching upstream functionality to pass language to thread
-        self.stream_stop()
-        self.queue = Queue()
-        self.stream = self.create_streaming_thread(language)
-        self.stream.language = language or self.lang
-        self.stream.start()
-
-    def _init_language_model(self, lang: str, cache: bool = True):
+    def init_language_model(self, lang: str, cache: bool = True):
+        lang = (lang or self.lang).split('-')[0]
         if lang not in self._clients:
             model, scorer = self.download_model(lang)
             LOG.info(f"Loading model for {lang}")
@@ -107,7 +82,9 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
                 client.enableExternalScorer(scorer)
             if cache:
                 self._clients[lang] = client
-            return client
+            else:
+                return client
+        return self._clients.get(lang)
 
     def download_model(self, lang: str = None):
         '''
@@ -131,9 +108,9 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
 
 
 class DeepSpeechLocalStreamThread(StreamThread):
-    def __init__(self, queue, lang, client, results_event):
+    def __init__(self, queue, lang, stt_class, results_event):
         super().__init__(queue, lang)
-        self.client = client
+        self.get_client = stt_class.init_language_model
         self.results_event = results_event
         self.transcriptions = []
 
@@ -154,7 +131,8 @@ class DeepSpeechLocalStreamThread(StreamThread):
             rms_value = math.pow(sum_squares / count, 0.5)
             return rms_value * 1000
 
-        stream = self.client.createStream()
+        LOG.info(f"Getting client stream for: {language}")
+        stream = self.get_client(language).createStream()
         current_time = time.time()
         end_time = current_time + timeout_length
         previous_intermediate_result, current_intermediate_result = '', ''
