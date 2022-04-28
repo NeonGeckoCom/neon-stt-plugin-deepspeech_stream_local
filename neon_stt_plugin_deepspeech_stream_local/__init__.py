@@ -78,6 +78,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
     def create_streaming_thread(self, lang=None):
         lang = (lang or self.lang).split('-')[0]
         self.queue = Queue()
+        LOG.info(f"Creating streaming thread for language: {lang}")
         if lang not in self._clients:
             self._init_language_model(lang)
         client = self._clients.get(lang)
@@ -87,6 +88,14 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
             client,
             self.results_event
         )
+
+    def stream_start(self, language=None):
+        # TODO: Patching upstream functionality to pass language to thread
+        self.stream_stop()
+        self.queue = Queue()
+        self.stream = self.create_streaming_thread(language)
+        self.stream.language = language or self.lang
+        self.stream.start()
 
     def _init_language_model(self, lang: str, cache: bool = True):
         if lang not in self._clients:
