@@ -15,7 +15,8 @@ license_overrides = {
     'setuptools': 'MIT',
     "python-dateutil": "Apache-2.0",
     "pyparsing": "MIT",
-    "typing-extensions": "PSF"
+    "typing-extensions": "PSF",
+    "exceptiongroup": "MIT"
 }
 # explicitly allow these packages that would fail otherwise
 whitelist = ['neon-stt-plugin-deepspeech_stream_local',
