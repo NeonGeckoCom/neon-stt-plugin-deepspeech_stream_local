@@ -58,7 +58,16 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         self.language = self.config.get('lang') or self.lang
         self.queue = None
         self._clients = dict()
-
+        if self.config.get("model_file") and \
+                os.path.isfile(self.config['model_file']):
+            try:
+                model = deepspeech.Model(self.config.get('model_file'))
+                if self.config.get('scorer_file') and \
+                        os.path.isfile(self.config['scorer_file']):
+                    model.enableExternalScorer(self.config.get('scorer_file'))
+                self._clients[self.language.split('-')[0]] = model
+            except Exception as e:
+                LOG.exception(e)
         self.init_language_model(self.language.split('-')[0], True)
         LOG.debug("Deepspeech STT Ready")
 
