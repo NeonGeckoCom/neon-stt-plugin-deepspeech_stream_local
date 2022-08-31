@@ -37,7 +37,7 @@ TEST_PATH = os.path.join(ROOT_DIR, "test_audio")
 class TestGetSTT(unittest.TestCase):
     def setUp(self) -> None:
         results_event = Event()
-        self.stt = DeepSpeechLocalStreamingSTT(results_event)
+        self.stt = DeepSpeechLocalStreamingSTT(results_event=results_event)
 
     def test_get_stt(self):
         for file in os.listdir(TEST_PATH):

@@ -42,9 +42,9 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         Streaming STT interface for DeepSpeech
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, **kwargs):
         super(DeepSpeechLocalStreamingSTT, self).__init__(config=config)
-        self.results_event = None
+        self.results_event = kwargs.get("results_event")
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
         self.queue = None
