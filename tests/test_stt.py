@@ -55,8 +55,7 @@ class NeonSTT(DeepSpeechLocalStreamingSTT):
 
 class TestGetSTT(unittest.TestCase):
     def test_get_stt_simple(self):
-        results_event = Event()
-        stt = DeepSpeechLocalStreamingSTT(results_event=results_event)
+        stt = DeepSpeechLocalStreamingSTT()
         for file in os.listdir(TEST_PATH):
             transcription = os.path.splitext(os.path.basename(file))[0].lower()
             stream = get_audio_file_stream(os.path.join(TEST_PATH, file))

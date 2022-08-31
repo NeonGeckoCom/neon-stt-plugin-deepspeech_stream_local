@@ -28,6 +28,7 @@ import numpy as np
 import time
 import math
 
+from threading import Event
 from platform import machine
 from queue import Queue
 from huggingface_hub import hf_hub_download
@@ -126,9 +127,7 @@ class DeepSpeechLocalStreamThread(StreamThread):
         super().__init__(queue, lang)
         self.name = "StreamThread"
         self.get_client = stt_class.init_language_model
-        self.results_event = results_event
-        if self.results_event:
-            self.results_event.clear()
+        self.results_event = results_event or Event()
         self.transcriptions = []
 
         self._invalid_first_transcriptions = ["he"]  # Known bad transcriptions that should be of lower confidence
@@ -189,12 +188,10 @@ class DeepSpeechLocalStreamThread(StreamThread):
             LOG.warning("Audio was empty")
             self.text = None
             self.transcriptions = []
-        if self.results_event:
-            self.results_event.set()
+        self.results_event.set()
         LOG.debug(f"self.text={self.text}")
         return self.transcriptions
 
     def finalize(self):
-        if self.results_event:
-            self.results_event.wait()
+        self.results_event.wait()
         return super().finalize()
