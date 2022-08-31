@@ -23,24 +23,18 @@
 
 import os
 import shutil
-
-from platform import machine
-from inspect import signature
-
 import deepspeech
 import numpy as np
 import time
 import math
+
+from platform import machine
 from queue import Queue
 from huggingface_hub import hf_hub_download
+from ovos_plugin_manager.templates.stt import StreamingSTT, StreamThread
+from ovos_utils.logger import LOG
 
 from neon_stt_plugin_deepspeech_stream_local.languages import languages
-
-try:
-    from neon_speech.stt import StreamingSTT, StreamThread
-except ImportError:
-    from ovos_plugin_manager.templates.stt import StreamingSTT, StreamThread
-from neon_utils.logger import LOG
 
 
 class DeepSpeechLocalStreamingSTT(StreamingSTT):
@@ -48,15 +42,9 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         Streaming STT interface for DeepSpeech
     """
 
-    def __init__(self, results_event, config=None):
-        if len(signature(super(DeepSpeechLocalStreamingSTT, self).__init__).parameters) == 0:
-            LOG.warning(f"Deprecated Signature Found; config will be ignored and results_event will not be handled!")
-            super(DeepSpeechLocalStreamingSTT, self).__init__()
-        else:
-            super(DeepSpeechLocalStreamingSTT, self).__init__(config=config)
-
-        if not hasattr(self, "results_event"):
-            self.results_event = None
+    def __init__(self, config=None):
+        super(DeepSpeechLocalStreamingSTT, self).__init__(config=config)
+        self.results_event = None
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
         self.queue = None
@@ -134,7 +122,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
 
 
 class DeepSpeechLocalStreamThread(StreamThread):
-    def __init__(self, queue, lang, stt_class, results_event):
+    def __init__(self, queue, lang, stt_class, results_event=None):
         super().__init__(queue, lang)
         self.get_client = stt_class.init_language_model
         self.results_event = results_event
@@ -173,7 +161,8 @@ class DeepSpeechLocalStreamThread(StreamThread):
             if rms(data16) > threshold and current_intermediate_result != previous_intermediate_result:
                 end_time = current_time + timeout_length
             previous_intermediate_result = current_intermediate_result
-            if current_time > end_time:
+            if current_time > end_time or not data:
+                LOG.info("Stream Stopped")
                 break
         responses = stream.finishStreamWithMetadata(num_results=5)
         self.transcriptions = []
