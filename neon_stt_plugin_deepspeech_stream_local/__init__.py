@@ -32,7 +32,7 @@ from platform import machine
 from queue import Queue
 from huggingface_hub import hf_hub_download
 from ovos_plugin_manager.templates.stt import StreamingSTT, StreamThread
-from ovos_utils.logger import LOG
+from ovos_utils.log import LOG
 
 from neon_stt_plugin_deepspeech_stream_local.languages import languages
 
