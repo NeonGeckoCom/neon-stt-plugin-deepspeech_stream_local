@@ -124,8 +124,11 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
 class DeepSpeechLocalStreamThread(StreamThread):
     def __init__(self, queue, lang, stt_class, results_event=None):
         super().__init__(queue, lang)
+        self.name = "StreamThread"
         self.get_client = stt_class.init_language_model
         self.results_event = results_event
+        if self.results_event:
+            self.results_event.clear()
         self.transcriptions = []
 
         self._invalid_first_transcriptions = ["he"]  # Known bad transcriptions that should be of lower confidence
@@ -190,3 +193,8 @@ class DeepSpeechLocalStreamThread(StreamThread):
             self.results_event.set()
         LOG.debug(f"self.text={self.text}")
         return self.transcriptions
+
+    def finalize(self):
+        if self.results_event:
+            self.results_event.wait()
+        return super().finalize()

@@ -1,4 +1,3 @@
-neon-speech
 pytest
 pytest-timeout
 neon-utils[audio]~=1.0
