@@ -22,6 +22,7 @@
 import os
 import sys
 import unittest
+from os.path import isfile
 
 from threading import Event
 from neon_utils.file_utils import get_audio_file_stream
@@ -54,6 +55,23 @@ class TestGetSTT(unittest.TestCase):
             self.assertIsNotNone(result, f"Error processing: {file}")
             self.assertIn(transcription, result)
             self.assertNotEqual(result[0], 'he')
+
+    def test_available_languages(self):
+        stt = DeepSpeechLocalStreamingSTT(None)
+        self.assertIsInstance(stt.available_languages(), set)
+        self.assertIn("en", stt.available_languages())
+        self.assertIn("es", stt.available_languages())
+
+    def test_download_model(self):
+        stt = DeepSpeechLocalStreamingSTT(None)
+        for lang in stt.available_languages():
+            model, scorer = stt.download_model(lang, False)
+            self.assertTrue(isfile(model))
+            self.assertTrue(isfile(scorer))
+
+            tf_model, tf_scorer = stt.download_model(lang, True)
+            self.assertTrue(isfile(tf_model))
+            self.assertEqual(scorer, tf_scorer)
 
 
 if __name__ == '__main__':
