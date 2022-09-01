@@ -23,6 +23,8 @@
 
 import os
 import shutil
+
+from platform import machine
 from inspect import signature
 
 import deepspeech
@@ -30,8 +32,9 @@ import numpy as np
 import time
 import math
 from queue import Queue
-from neon_stt_plugin_deepspeech_stream_local.util import get_model
 from huggingface_hub import hf_hub_download
+
+from neon_stt_plugin_deepspeech_stream_local.languages import languages
 
 try:
     from neon_speech.stt import StreamingSTT, StreamThread
@@ -50,7 +53,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
             LOG.warning(f"Deprecated Signature Found; config will be ignored and results_event will not be handled!")
             super(DeepSpeechLocalStreamingSTT, self).__init__()
         else:
-            super(DeepSpeechLocalStreamingSTT, self).__init__(results_event=results_event, config=config)
+            super(DeepSpeechLocalStreamingSTT, self).__init__(config=config)
 
         if not hasattr(self, "results_event"):
             self.results_event = None
@@ -83,7 +86,8 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
     def init_language_model(self, lang: str, cache: bool = True):
         lang = (lang or self.lang).split('-')[0]
         if lang not in self._clients:
-            model, scorer = self.download_model(lang)
+            tflite = machine() == 'aarch64'
+            model, scorer = self.download_model(lang, tflite)
             LOG.info(f"Loading model for {lang}")
             client = deepspeech.Model(model)
             if scorer and os.path.isfile(scorer):
@@ -95,25 +99,38 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
                 return client
         return self._clients.get(lang)
 
-    def download_model(self, lang: str = None):
-        '''
+    def download_model(self, lang: str = None, tflite: bool = False):
+        """
         Downloading model and scorer for the specific language
         from Huggingface.
         Creating a folder  'polyglot_models' in xdg_data_home
         Creating a language folder in 'polyglot_models' folder
-        '''
-        lang = lang or self.lang
-        repo_id = f"NeonBohdan/stt-polyglot-{lang.split('-')[0]}"
-        download_path = hf_hub_download(repo_id, filename="output_graph.pbmm")
-        scorer_file_path = hf_hub_download(repo_id, filename="kenlm.scorer")
+        """
+        lang = (lang or self.lang).split('-')[0]
+        repo_id = languages.get(lang)['repo']
+        if not repo_id:
+            raise Exception(f'{lang} is not supported')
+        if tflite:
+            model_file = languages[lang]['tflite']
+            download_path = hf_hub_download(repo_id, filename=model_file)
+            model_path = f"{download_path}.tflite"
+        else:
+            model_file = languages[lang]['pbmm']
+            download_path = hf_hub_download(repo_id, filename=model_file)
+            model_path = f"{download_path}.pbmm"
+
+        scorer_file_path = hf_hub_download(repo_id,
+                                           filename=languages[lang]['scorer'])
         # Model path must include the `pbmm` file extension
         # TODO: Consider renaming files and moving to ~/.local/share/neon
-        model_path = f"{download_path}.pbmm"
         if not os.path.isfile(model_path) or \
                 os.path.getmtime(model_path) != os.path.getmtime(download_path):
             LOG.info("Getting new model from huggingface")
             shutil.copy2(download_path, model_path)
         return model_path, scorer_file_path
+
+    def available_languages(self) -> set:
+        return set(languages.keys())
 
 
 class DeepSpeechLocalStreamThread(StreamThread):
