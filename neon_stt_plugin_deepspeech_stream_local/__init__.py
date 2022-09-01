@@ -24,7 +24,7 @@
 import os
 import shutil
 
-from platform import machine()
+from platform import machine
 from inspect import signature
 
 import deepspeech
