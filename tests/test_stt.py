@@ -34,25 +34,61 @@ ROOT_DIR = os.path.dirname(os.path.realpath(__file__))
 TEST_PATH = os.path.join(ROOT_DIR, "test_audio")
 
 
-class TestGetSTT(unittest.TestCase):
-    def setUp(self) -> None:
-        results_event = Event()
-        self.stt = DeepSpeechLocalStreamingSTT(results_event)
+class NeonSTT(DeepSpeechLocalStreamingSTT):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    def test_get_stt(self):
+    def stream_stop(self):
+        if self.stream is not None:
+            self.queue.put(None)
+            text = self.stream.finalize()
+            to_return = [text]
+            self.stream.join()
+            if hasattr(self.stream, 'transcriptions'):
+                to_return = self.stream.transcriptions
+            self.stream = None
+            self.queue = None
+            self.results_event.set()
+            return to_return
+        return None
+
+
+class TestGetSTT(unittest.TestCase):
+    def test_get_stt_simple(self):
+        stt = DeepSpeechLocalStreamingSTT()
         for file in os.listdir(TEST_PATH):
             transcription = os.path.splitext(os.path.basename(file))[0].lower()
             stream = get_audio_file_stream(os.path.join(TEST_PATH, file))
-            self.stt.stream_start()
+            stt.stream_start()
             try:
                 while True:
                     chunk = stream.read(1024)
-                    self.stt.stream_data(chunk)
+                    stt.stream_data(chunk)
             except EOFError:
                 pass
 
-            result = self.stt.execute(None)
+            result = stt.execute(None)
             self.assertIsNotNone(result, f"Error processing: {file}")
+            self.assertIsInstance(result, str)
+            self.assertEqual(transcription, result)
+
+    def test_get_stt_neon(self):
+        results_event = Event()
+        stt = NeonSTT(results_event=results_event)
+        for file in os.listdir(TEST_PATH):
+            transcription = os.path.splitext(os.path.basename(file))[0].lower()
+            stream = get_audio_file_stream(os.path.join(TEST_PATH, file))
+            stt.stream_start()
+            try:
+                while True:
+                    chunk = stream.read(1024)
+                    stt.stream_data(chunk)
+            except EOFError:
+                pass
+
+            result = stt.execute(None)
+            self.assertIsNotNone(result, f"Error processing: {file}")
+            self.assertIsInstance(result, list)
             self.assertIn(transcription, result)
             self.assertNotEqual(result[0], 'he')
 
