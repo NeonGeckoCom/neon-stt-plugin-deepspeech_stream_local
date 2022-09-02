@@ -94,13 +94,13 @@ class TestGetSTT(unittest.TestCase):
 
     def test_available_languages(self):
         stt = DeepSpeechLocalStreamingSTT(None)
-        self.assertIsInstance(stt.available_languages(), set)
-        self.assertIn("en", stt.available_languages())
-        self.assertIn("es", stt.available_languages())
+        self.assertIsInstance(stt.available_languages, set)
+        self.assertIn("en", stt.available_languages)
+        self.assertIn("es", stt.available_languages)
 
     def test_download_model(self):
         stt = DeepSpeechLocalStreamingSTT(None)
-        for lang in stt.available_languages():
+        for lang in stt.available_languages:
             model, scorer = stt.download_model(lang, False)
             self.assertTrue(isfile(model))
             self.assertTrue(isfile(scorer))

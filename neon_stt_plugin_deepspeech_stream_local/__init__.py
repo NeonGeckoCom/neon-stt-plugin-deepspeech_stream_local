@@ -118,6 +118,7 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
             shutil.copy2(download_path, model_path)
         return model_path, scorer_file_path
 
+    @property
     def available_languages(self) -> set:
         return set(languages.keys())
 
