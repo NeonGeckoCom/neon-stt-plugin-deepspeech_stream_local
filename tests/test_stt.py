@@ -100,7 +100,7 @@ class TestGetSTT(unittest.TestCase):
 
     def test_download_model(self):
         stt = DeepSpeechLocalStreamingSTT(None)
-        for lang in stt.available_languages():
+        for lang in stt.available_languages:
             model, scorer = stt.download_model(lang, False)
             self.assertTrue(isfile(model))
             self.assertTrue(isfile(scorer))
