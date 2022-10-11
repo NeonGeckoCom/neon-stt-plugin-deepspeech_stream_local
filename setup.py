@@ -72,5 +72,6 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     keywords='mycroft plugin stt',
-    entry_points={'mycroft.plugin.stt': PLUGIN_ENTRY_POINT}
+    entry_points={'mycroft.plugin.stt': PLUGIN_ENTRY_POINT,
+                  'mycroft.plugin.stt.config': CONFIG_ENTRY_POINT}
 )
