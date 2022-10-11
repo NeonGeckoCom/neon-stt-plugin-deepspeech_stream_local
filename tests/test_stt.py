@@ -110,5 +110,29 @@ class TestGetSTT(unittest.TestCase):
             self.assertEqual(scorer, tf_scorer)
 
 
+class TestUtils(unittest.TestCase):
+    def test_languages(self):
+        from neon_stt_plugin_deepspeech_stream_local.languages import languages
+        self.assertIsInstance(languages, dict)
+        for lang in languages.keys():
+            self.assertEqual(set(languages[lang].keys()),
+                             {'repo', 'scorer', 'pbmm', 'tflite', 'language',
+                              'regions'})
+            for region in languages[lang]['regions']:
+                self.assertIsInstance(region, tuple)
+                self.assertIsInstance(region[0], str)
+                self.assertEqual(len(region[1].split('-')), 2)
+
+    def test_stt_config(self):
+        from neon_stt_plugin_deepspeech_stream_local.languages import stt_config
+        self.assertIsInstance(stt_config, dict)
+        for lang, configs in stt_config.items():
+            self.assertIsInstance(configs, list)
+            for config in configs:
+                self.assertEqual(config['lang'], lang)
+                self.assertIsInstance(config['display_name'], str)
+                self.assertTrue(config['offline'])
+
+
 if __name__ == '__main__':
     unittest.main()
