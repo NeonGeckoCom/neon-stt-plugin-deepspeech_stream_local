@@ -40,7 +40,7 @@ def get_requirements(requirements_filename: str):
 
 
 PLUGIN_ENTRY_POINT = 'deepspeech_stream_local = neon_stt_plugin_deepspeech_stream_local:DeepSpeechLocalStreamingSTT'
-CONFIG_ENTRY_POINT = 'deepspeech_stream_local = neon_stt_plugin_deepspeech_stream_local.languages:stt_config'
+CONFIG_ENTRY_POINT = 'deepspeech_stream_local.config = neon_stt_plugin_deepspeech_stream_local.languages:stt_config'
 
 with open("README.md", "r") as f:
     long_description = f.read()
