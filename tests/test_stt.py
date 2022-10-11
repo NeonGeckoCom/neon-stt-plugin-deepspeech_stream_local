@@ -124,7 +124,7 @@ class TestUtils(unittest.TestCase):
                 self.assertEqual(len(region[1].split('-')), 2)
 
     def test_stt_config(self):
-        from neon_stt_plugin_deepspeech_stream_local.languages import stt_config
+        from neon_stt_plugin_deepspeech_stream_local.languages import stt_config, languages
         self.assertIsInstance(stt_config, dict)
         for lang, configs in stt_config.items():
             self.assertIsInstance(configs, list)
@@ -132,6 +132,8 @@ class TestUtils(unittest.TestCase):
                 self.assertEqual(config['lang'], lang)
                 self.assertIsInstance(config['display_name'], str)
                 self.assertTrue(config['offline'])
+
+        self.assertGreaterEqual(len(stt_config), len(languages))
 
 
 if __name__ == '__main__':
