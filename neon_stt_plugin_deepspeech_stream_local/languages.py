@@ -75,6 +75,7 @@ stt_config = {bcp: [
     {
         'lang': bcp,
         'display_name': f'{config["language"]} ({bcp})',
-        'offline': True
+        'offline': True,
+        'priority': 75
     }
 ] for config in languages.values() for country, bcp in config['regions']}
