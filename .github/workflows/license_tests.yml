@@ -33,7 +33,7 @@ jobs:
           fail: 'Copyleft,Other,Error'
           fails-only: true
           exclude: '^(tqdm).*'
-          exclude-license: '^(Mozilla).*$'
+          exclude-license: '^(Mozilla).*$|^(NeonAI License).*$'
       - name: Print report
         if: ${{ always() }}
         run: echo "${{ steps.license_check_report.outputs.report }}"
