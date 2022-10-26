@@ -1,43 +1,46 @@
-#!/usr/bin/env bash
-
-# NEON AI (TM) SOFTWARE, Software Development Kit & Application Development System
+# NEON AI (TM) SOFTWARE, Software Development Kit & Application Framework
 # All trademark and other rights reserved by their respective owners
-# Copyright 2008-2021 Neongecko.com Inc.
-#
-# Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
-# following conditions are met:
-# 1. Redistributions of source code must retain the above copyright notice, this list of conditions
-#    and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions
-#    and the following disclaimer in the documentation and/or other materials provided with the distribution.
-# 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior written permission.
-
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
-# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-# USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# Copyright 2008-2022 Neongecko.com Inc.
+# Contributors: Daniel McKnight, Guy Daniels, Elon Gasper, Richard Leeds,
+# Regina Bloomstine, Casimiro Ferreira, Andrii Pernatii, Kirill Hrymailo
+# BSD-3 License
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from this
+#    software without specific prior written permission.
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+# CONTRIBUTORS  BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+# OR PROFITS;  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
 import shutil
-from inspect import signature
-
 import deepspeech
 import numpy as np
 import time
 import math
-from queue import Queue
-from neon_stt_plugin_deepspeech_stream_local.util import get_model
-from huggingface_hub import hf_hub_download
 
-try:
-    from neon_speech.stt import StreamingSTT, StreamThread
-except ImportError:
-    from ovos_plugin_manager.templates.stt import StreamingSTT, StreamThread
-from neon_utils.logger import LOG
+from threading import Event
+from platform import machine
+from queue import Queue
+from huggingface_hub import hf_hub_download
+from ovos_plugin_manager.templates.stt import StreamingSTT, StreamThread
+from ovos_utils.log import LOG
+
+from neon_stt_plugin_deepspeech_stream_local.languages import languages
 
 
 class DeepSpeechLocalStreamingSTT(StreamingSTT):
@@ -45,15 +48,9 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
         Streaming STT interface for DeepSpeech
     """
 
-    def __init__(self, results_event, config=None):
-        if len(signature(super(DeepSpeechLocalStreamingSTT, self).__init__).parameters) == 0:
-            LOG.warning(f"Deprecated Signature Found; config will be ignored and results_event will not be handled!")
-            super(DeepSpeechLocalStreamingSTT, self).__init__()
-        else:
-            super(DeepSpeechLocalStreamingSTT, self).__init__(results_event=results_event, config=config)
-
-        if not hasattr(self, "results_event"):
-            self.results_event = None
+    def __init__(self, config=None, **kwargs):
+        super(DeepSpeechLocalStreamingSTT, self).__init__(config=config)
+        self.results_event = kwargs.get("results_event")
         # override language with module specific language selection
         self.language = self.config.get('lang') or self.lang
         self.queue = None
@@ -83,7 +80,8 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
     def init_language_model(self, lang: str, cache: bool = True):
         lang = (lang or self.lang).split('-')[0]
         if lang not in self._clients:
-            model, scorer = self.download_model(lang)
+            tflite = machine() == 'aarch64'
+            model, scorer = self.download_model(lang, tflite)
             LOG.info(f"Loading model for {lang}")
             client = deepspeech.Model(model)
             if scorer and os.path.isfile(scorer):
@@ -95,32 +93,47 @@ class DeepSpeechLocalStreamingSTT(StreamingSTT):
                 return client
         return self._clients.get(lang)
 
-    def download_model(self, lang: str = None):
-        '''
+    def download_model(self, lang: str = None, tflite: bool = False):
+        """
         Downloading model and scorer for the specific language
         from Huggingface.
         Creating a folder  'polyglot_models' in xdg_data_home
         Creating a language folder in 'polyglot_models' folder
-        '''
-        lang = lang or self.lang
-        repo_id = f"NeonBohdan/stt-polyglot-{lang.split('-')[0]}"
-        download_path = hf_hub_download(repo_id, filename="output_graph.pbmm")
-        scorer_file_path = hf_hub_download(repo_id, filename="kenlm.scorer")
+        """
+        lang = (lang or self.lang).split('-')[0]
+        repo_id = languages.get(lang)['repo']
+        if not repo_id:
+            raise Exception(f'{lang} is not supported')
+        if tflite:
+            model_file = languages[lang]['tflite']
+            download_path = hf_hub_download(repo_id, filename=model_file)
+            model_path = f"{download_path}.tflite"
+        else:
+            model_file = languages[lang]['pbmm']
+            download_path = hf_hub_download(repo_id, filename=model_file)
+            model_path = f"{download_path}.pbmm"
+
+        scorer_file_path = hf_hub_download(repo_id,
+                                           filename=languages[lang]['scorer'])
         # Model path must include the `pbmm` file extension
         # TODO: Consider renaming files and moving to ~/.local/share/neon
-        model_path = f"{download_path}.pbmm"
         if not os.path.isfile(model_path) or \
                 os.path.getmtime(model_path) != os.path.getmtime(download_path):
             LOG.info("Getting new model from huggingface")
             shutil.copy2(download_path, model_path)
         return model_path, scorer_file_path
 
+    @property
+    def available_languages(self) -> set:
+        return set(languages.keys())
+
 
 class DeepSpeechLocalStreamThread(StreamThread):
-    def __init__(self, queue, lang, stt_class, results_event):
+    def __init__(self, queue, lang, stt_class, results_event=None):
         super().__init__(queue, lang)
+        self.name = "StreamThread"
         self.get_client = stt_class.init_language_model
-        self.results_event = results_event
+        self.results_event = results_event or Event()
         self.transcriptions = []
 
         self._invalid_first_transcriptions = ["he"]  # Known bad transcriptions that should be of lower confidence
@@ -156,7 +169,8 @@ class DeepSpeechLocalStreamThread(StreamThread):
             if rms(data16) > threshold and current_intermediate_result != previous_intermediate_result:
                 end_time = current_time + timeout_length
             previous_intermediate_result = current_intermediate_result
-            if current_time > end_time:
+            if current_time > end_time or not data:
+                LOG.info("Stream Stopped")
                 break
         responses = stream.finishStreamWithMetadata(num_results=5)
         self.transcriptions = []
@@ -180,7 +194,10 @@ class DeepSpeechLocalStreamThread(StreamThread):
             LOG.warning("Audio was empty")
             self.text = None
             self.transcriptions = []
-        if self.results_event:
-            self.results_event.set()
+        self.results_event.set()
         LOG.debug(f"self.text={self.text}")
         return self.transcriptions
+
+    def finalize(self):
+        self.results_event.wait()
+        return super().finalize()

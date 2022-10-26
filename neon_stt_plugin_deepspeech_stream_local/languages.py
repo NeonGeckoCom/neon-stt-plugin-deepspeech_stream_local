@@ -26,4 +26,56 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE,  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-__version__ = "2.0.0"
+languages = {
+    'en': {'repo': 'NeonBohdan/stt-polyglot-en',
+           'scorer': 'kenlm.scorer',
+           'pbmm': 'output_graph.pbmm',
+           'tflite': 'model.tflite',
+           'language': 'English',
+           'regions': [('US', 'en-US')]
+           },
+    'es': {'repo': 'NeonBohdan/stt-polyglot-es',
+           'scorer': 'kenlm.scorer',
+           'pbmm': 'output_graph.pbmm',
+           'tflite': 'output_graph.tflite',
+           'language': 'Spanish',
+           'regions': [('Spain', 'es-ES')]
+           },
+    'pl': {'repo': 'NeonBohdan/stt-polyglot-pl',
+           'scorer': 'kenlm.scorer',
+           'pbmm': 'output_graph.pbmm',
+           'tflite': 'output_graph.tflite',
+           'language': 'Polish',
+           'regions': [('Poland', 'pl-PL')]
+           },
+    'it': {'repo': 'NeonBohdan/stt-polyglot-it',
+           'scorer': 'kenlm.scorer',
+           'pbmm': 'output_graph.pbmm',
+           'tflite': 'output_graph.tflite',
+           'language': 'Italian',
+           'regions': [('Italy', 'it-IT')]
+           },
+    'de': {'repo': 'NeonBohdan/stt-polyglot-de',
+           'scorer': 'kenlm.scorer',
+           'pbmm': 'output_graph.pbmm',
+           'tflite': 'output_graph.tflite',
+           'language': 'German',
+           'regions': [('Germany', 'de-DE')]
+           },
+    'fr': {'repo': 'NeonBohdan/stt-polyglot-fr',
+           'scorer': 'kenlm.scorer',
+           'pbmm': 'output_graph.pbmm',
+           'tflite': 'output_graph.tflite',
+           'language': 'French',
+           'regions': [('France', 'fr-FR')]
+           }
+}
+
+stt_config = {bcp: [
+    {
+        'lang': bcp,
+        'display_name': f'{config["language"]} ({bcp})',
+        'offline': True,
+        'priority': 40
+    }
+] for config in languages.values() for country, bcp in config['regions']}
